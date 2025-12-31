@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { Artwork } from "@/types/artwork"
 
 interface ArtworkCardProps {
@@ -14,8 +14,18 @@ interface ArtworkCardProps {
 
 export function ArtworkCard({ artwork, isActive, dragOffset, index, currentIndex }: ArtworkCardProps) {
   const [isHovered, setIsHovered] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
+  const [imageError, setImageError] = useState(false)
+  const [shouldLoad, setShouldLoad] = useState(false)
   const distance = index - currentIndex
   const parallaxOffset = dragOffset * (0.1 * (distance + 1))
+
+  // Load image when card is within 2 slides of current
+  useEffect(() => {
+    if (Math.abs(distance) <= 2) {
+      setShouldLoad(true)
+    }
+  }, [distance])
 
   return (
     <motion.div
@@ -45,17 +55,37 @@ export function ArtworkCard({ artwork, isActive, dragOffset, index, currentIndex
 
         {/* Image container */}
         <div className="relative h-[400px] w-[400px] overflow-hidden rounded-2xl p-3 md:h-[500px] md:w-[500px]">
-          <motion.img
-            src={artwork.image}
-            alt={artwork.title}
-            className="h-full w-full rounded-xl object-cover"
-            animate={{
-              scale: isHovered && isActive ? 1.05 : 1,
-            }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            crossOrigin="anonymous"
-            draggable={false}
-          />
+          {/* Loading placeholder */}
+          {!imageLoaded && shouldLoad && (
+            <div className="absolute inset-3 rounded-xl bg-gray-800 animate-pulse" />
+          )}
+          
+          {/* Error placeholder */}
+          {imageError && (
+            <div className="absolute inset-3 rounded-xl bg-gray-800 flex items-center justify-center">
+              <span className="text-gray-400 text-sm">Failed to load</span>
+            </div>
+          )}
+          
+          {/* Actual image */}
+          {shouldLoad && !imageError && (
+            <motion.img
+              src={artwork.image}
+              alt={artwork.title}
+              className={`h-full w-full rounded-xl object-cover transition-opacity duration-300 ${
+                imageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              animate={{
+                scale: isHovered && isActive ? 1.05 : 1,
+              }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              crossOrigin="anonymous"
+              draggable={false}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              loading="lazy"
+            />
+          )}
 
           {/* Gradient overlay for text */}
           <motion.div
