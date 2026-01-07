@@ -4,4 +4,5 @@ export interface Artwork {
   artist?: string
   year?: number
   image: string
+  thumbnail?: string
 }
